@@ -272,12 +272,10 @@ func (t *typeScriptClassBuilder) AddMapField(fieldName string, field reflect.Str
 	}
 	strippedFieldName := strings.ReplaceAll(fieldName, "?", "")
 
-	keyTypeStr := keyType.Name()
-	// Key should always be string, no need for this:
-	// _, isSimple := t.types[keyType.Kind()]
-	// if !isSimple {
-	// 	keyTypeStr = t.prefix + keyType.Name() + t.suffix
-	// }
+	keyTypeStr, isSimple := t.types[keyType.Kind()]
+	if !isSimple {
+		keyTypeStr = t.prefix + keyType.Name() + t.suffix
+	}
 
 	if valueType.Kind() == reflect.Struct {
 		t.fields = append(t.fields, fmt.Sprintf("%s%s: {[key: %s]: %s};", t.indent, fieldName, keyTypeStr, t.prefix+valueTypeName))

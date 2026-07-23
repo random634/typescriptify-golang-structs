@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"text/template"
+
+	"github.com/random634/typescriptify-golang-structs/typescriptify"
 )
 
 type arrayImports []string
@@ -29,7 +31,7 @@ import (
 	"fmt"
 
 	m "{{ .ModelsPackage }}"
-	"github.com/tkrajina/typescriptify-golang-structs/typescriptify"
+	"github.com/random634/typescriptify-golang-structs/typescriptify"
 )
 
 func main() {
@@ -41,6 +43,10 @@ func main() {
 {{ end }}
 {{ range .CustomImports }}	t.AddImport("{{ . }}")
 {{ end }}
+
+  t.WithCustomCodeBefore("{{ .CustomCodeBefore }}")
+  t.WithCustomCodeAfter("{{ .CustomCodeAfter }}")
+
 	err := t.ConvertToFile("{{ .TargetFile }}")
 	if err != nil {
 		panic(err.Error())
@@ -49,13 +55,15 @@ func main() {
 }`
 
 type Params struct {
-	ModelsPackage string
-	TargetFile    string
-	Structs       []string
-	InitParams    map[string]interface{}
-	CustomImports arrayImports
-	Interface     bool
-	Verbose       bool
+	ModelsPackage    string
+	TargetFile       string
+	Structs          []string
+	InitParams       map[string]interface{}
+	CustomImports    arrayImports
+	CustomCodeBefore string
+	CustomCodeAfter  string
+	Interface        bool
+	Verbose          bool
 }
 
 func main() {
@@ -66,8 +74,15 @@ func main() {
 	flag.StringVar(&backupDir, "backup", "", "Directory where backup files are saved")
 	flag.BoolVar(&p.Interface, "interface", false, "Create interfaces (not classes)")
 	flag.Var(&p.CustomImports, "import", "Typescript import for your custom type, repeat this option for each import needed")
+	flag.StringVar(&p.CustomCodeBefore, "before", "", "Specify custom code before")
+	flag.StringVar(&p.CustomCodeAfter, "after", "", "Specify custom code after")
 	flag.BoolVar(&p.Verbose, "verbose", false, "Verbose logs")
 	flag.Parse()
+
+	// hold
+	converter := typescriptify.New()
+	converter.WithCustomCodeBefore("")
+	converter.WithCustomCodeAfter("")
 
 	structs := []string{}
 	for _, structOrGoFile := range flag.Args() {
@@ -110,6 +125,7 @@ func main() {
 	p.InitParams = map[string]interface{}{
 		"BackupDir": fmt.Sprintf(`"%s"`, backupDir),
 	}
+
 	err = t.Execute(f, p)
 	handleErr(err)
 
